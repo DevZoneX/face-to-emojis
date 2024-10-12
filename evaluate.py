@@ -5,10 +5,10 @@ from model import EmotionCNN
 
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-train_loader, test_loader = get_test_loader(test_batch_size=8)
+test_loader = get_test_loader(test_batch_size=64)
 
-model = EmotionCNN()
-model.load_state_dict(torch.load('emotion_cnn.pth'))
+model = EmotionCNN().to(device)
+model.load_state_dict(torch.load('models/emotion_cnn.pth'))
 
 def evaluate_model(model, test_loader):
     model.eval()
