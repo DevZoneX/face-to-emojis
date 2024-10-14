@@ -30,7 +30,7 @@ transform = transforms.Compose([
 face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
 
 # Specify the index of the external webcam (change based on your setup)
-camera_index = 2  # Adjust this if needed
+camera_index = 0  # Adjust this if needed
 
 # Store current emotion data globally
 current_emotion = {}  # Store the current detected emotion percentages
