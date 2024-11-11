@@ -1,5 +1,7 @@
 cv_project
-data
+data1
+data2
+data3
 __pycache__
 *.pyc
 ssh_connect.py

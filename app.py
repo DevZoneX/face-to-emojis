@@ -1,24 +1,19 @@
-from flask import Flask, render_template, Response, jsonify
+from flask import Flask, render_template, Response, jsonify, request
 import cv2
 import torch
 import torchvision.transforms as transforms
 from PIL import Image
 import torch.nn.functional as F
-from model import EmotionCNN  # Ensure your model class is in this file
+from model import EmotionCNN
+from deepface import DeepFace 
 
-# Initialize Flask app
 app = Flask(__name__)
 
-# Load the pre-trained emotion model
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-model = EmotionCNN().to(device)
-model.load_state_dict(torch.load('models/emotion_cnn.pth', map_location=device, weights_only=True))
-model.eval()
+model_type = "pretrained"
 
-# Define emotion labels
 emotion_labels = ["Angry", "Disgust", "Fear", "Happy", "Sad", "Surprise", "Neutral"]
 
-# Define image transformations (same as for the model input)
 transform = transforms.Compose([
     transforms.Resize((48, 48)),
     transforms.Grayscale(num_output_channels=1),
@@ -26,35 +21,48 @@ transform = transforms.Compose([
     transforms.Normalize((0.5,), (0.5,)),
 ])
 
-# Initialize the OpenCV face detector (Haar Cascade)
 face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+camera_index = 0
+current_emotion = {}
 
-# Specify the index of the external webcam (change based on your setup)
-camera_index = 0  # Adjust this if needed
+trained_model = EmotionCNN().to(device)
+trained_model.load_state_dict(torch.load('models/emotion_cnn.pth', map_location=device, weights_only=True))
+trained_model.eval()
 
-# Store current emotion data globally
-current_emotion = {}  # Store the current detected emotion percentages
+def load_model(model_type):
+    """Selects the model based on user choice."""
+    if model_type == "trained":
+        return trained_model
+    elif model_type == "pretrained":
+        return None
+
 
 def predict_emotion(face_roi):
-    """
-    This function takes a face region of interest (ROI), processes it,
-    and returns the predicted emotion percentages for all labels.
-    """
-    face_img = Image.fromarray(face_roi)  # Convert to PIL Image
-    face_tensor = transform(face_img).unsqueeze(0).to(device)  # Transform and add batch dimension
-    with torch.no_grad():
-        output = model(face_tensor)
-        probabilities = F.softmax(output, dim=1)  # Apply softmax to get probabilities
+    """Predicts emotion based on the selected model."""
+    global model_type
+    if model_type == "trained":
+        face_img = Image.fromarray(face_roi).convert('L')
+        face_tensor = transform(face_img).unsqueeze(0).to(device)
+        with torch.no_grad():
+            output = trained_model(face_tensor)
+            probabilities = F.softmax(output, dim=1)
+        
+        return {emotion_labels[i]: round(probabilities[0, i].item() * 100, 2) for i in range(len(emotion_labels))}
+    
+    elif model_type == "pretrained":
+        if len(face_roi.shape) == 2:
+            face_roi = cv2.cvtColor(face_roi, cv2.COLOR_GRAY2RGB)
+    
+        result = DeepFace.analyze(face_roi, actions=['emotion'], enforce_detection=False)[0]['emotion']
+        emotion_data = {emotion_labels[i]: float(round(result[emotion_labels[i].lower()] , 2)) for i in range(len(emotion_labels))}
 
-    emotion_percentages = {emotion_labels[i]: round(probabilities[0, i].item() * 100, 2) for i in range(len(emotion_labels))}
-    return emotion_percentages  # Return percentages for all emotions
+        return emotion_data
+
+
 
 def generate_frames():
-    global current_emotion  # Use global variable to update current emotion data
-
-    # Open the external webcam
+    global current_emotion
     camera = cv2.VideoCapture(camera_index)
-
     if not camera.isOpened():
         print(f"Error: Could not access camera with index {camera_index}")
         return
@@ -64,30 +72,25 @@ def generate_frames():
         if not success:
             break
         else:
-            # Convert the frame to grayscale for face detection
             gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
             faces = face_cascade.detectMultiScale(gray, 1.1, 4)
 
-            # For each detected face, predict emotion percentages
             for (x, y, w, h) in faces:
-                # Extract the face region of interest (ROI)
-                face_roi = gray[y:y+h, x:x+w]
+                face_roi = frame[y:y+h, x:x+w] if model_type == "pretrained" else gray[y:y+h, x:x+w]
+                
+                # Predict emotion
+                current_emotion = predict_emotion(face_roi)
 
-                # Predict emotion percentages
-                current_emotion = predict_emotion(face_roi)  # Update current emotion
-
-                # Draw a rectangle around the face (optional, you can remove this too if you don't want the rectangle)
+                # Draw rectangle around face (optional)
                 cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 0, 0), 2)
 
-                # Remove cv2.putText, so no text is displayed on the frame itself
-
-            # Encode the frame into a JPEG format
+            # Encode the frame in JPEG format
             ret, buffer = cv2.imencode('.jpg', frame)
             frame = buffer.tobytes()
 
-            # Yield the frame in byte format for streaming
             yield (b'--frame\r\n'
                    b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+
 
 
 @app.route('/')
@@ -105,6 +108,12 @@ def emotion_feed():
         return jsonify(current_emotion)
     return jsonify({"error": "No emotion data available"})
 
+@app.route('/set_model', methods=['POST'])
+def set_model():
+    global model_type
+    model_type = request.json.get("model_type", "trained")
+    return jsonify({"model_type": model_type, "message": f"Model set to {model_type}"})
+
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5001)  # Change port number here
+    app.run(debug=True, port=5001)
