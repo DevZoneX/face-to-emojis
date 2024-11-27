@@ -6,6 +6,7 @@ from mediapipe.tasks import python
 from mediapipe.tasks.python import vision
 from functions import create_detector, draw_landmarks_on_image, compute_edges, image_distance, mask_resized, hu_moment_similarity, shape_similarity, circular_mask
 from datasets import load_dataset
+import pandas as pd
 
 ds = load_dataset("valhalla/emoji-dataset")
 emoji_of_interest = [1, 3, 114, 669, 780, 1002, 1336, 1447, 1996, 2007, 2018,
@@ -16,8 +17,9 @@ image_edge = [compute_edges(ds['train'][i]['image'])
               for i in emoji_of_interest]
 text = [ds['train'][i]['text'] for i in emoji_of_interest]
 data = [(image_edge[i], text[i]) for i in range(len(emoji_of_interest))]
-
 data_emoji = np.array(data, dtype=object)
+
+df_emotion_to_emoji = pd.read_csv("datasets/EmoTag1200-scores.csv")
 
 shape = image_edge[0].shape
 
