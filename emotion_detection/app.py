@@ -1,24 +1,24 @@
-from flask import Flask, render_template, Response, jsonify, request
+from flask import Flask, render_template, Response, jsonify
 import cv2
 import torch
 import torchvision.transforms as transforms
 from PIL import Image
 import torch.nn.functional as F
-from model import EmotionCNN
-from deepface import DeepFace 
+from model_utils.model import EmotionCNN
+from deepface import DeepFace
 
 app = Flask(__name__)
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-model_type = "pretrained"
+model_type = "trained"
 
-emotion_labels = ["Angry", "Disgust", "Fear", "Happy", "Sad", "Surprise", "Neutral"]
+emotion_labels = ["Angry", "Contempt", "Disgust", "Fear", "Happy", "Neutral", "Sad", "Surprise"]
 
 transform = transforms.Compose([
-    transforms.Resize((48, 48)),
     transforms.Grayscale(num_output_channels=1),
+    transforms.Resize((48, 48)),
     transforms.ToTensor(),
-    transforms.Normalize((0.5,), (0.5,)),
+    transforms.Normalize(mean=[0.5], std=[0.5])
 ])
 
 face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
@@ -78,20 +78,39 @@ def generate_frames():
             for (x, y, w, h) in faces:
                 face_roi = frame[y:y+h, x:x+w] if model_type == "pretrained" else gray[y:y+h, x:x+w]
                 
-                # Predict emotion
                 current_emotion = predict_emotion(face_roi)
 
-                # Draw rectangle around face (optional)
                 cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 0, 0), 2)
 
-            # Encode the frame in JPEG format
             ret, buffer = cv2.imencode('.jpg', frame)
             frame = buffer.tobytes()
 
             yield (b'--frame\r\n'
                    b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
 
+def get_emojis():
+    global current_emotion
 
+    emoji_map = {
+        "Angry": "😡",
+        "Contempt": "😒",
+        "Disgust": "🤢",
+        "Fear": "😨",
+        "Happy": "😊",
+        "Neutral": "😐",
+        "Sad": "😢",
+        "Surprise": "😲"
+    }
+
+    suggested_emojis = []
+
+    for emotion in emotion_labels:
+        if emotion in current_emotion and current_emotion[emotion] > 50:
+            suggested_emojis.append({
+                "name": emotion,
+                "emoji": emoji_map.get(emotion, "")
+            })
+    return suggested_emojis
 
 @app.route('/')
 def index():
@@ -105,15 +124,13 @@ def video_feed():
 def emotion_feed():
     global current_emotion
     if current_emotion:
+
+        # Add the suggested emojis to the response
+        current_emotion['emojis'] = get_emojis()
+
         return jsonify(current_emotion)
+
     return jsonify({"error": "No emotion data available"})
 
-@app.route('/set_model', methods=['POST'])
-def set_model():
-    global model_type
-    model_type = request.json.get("model_type", "trained")
-    return jsonify({"model_type": model_type, "message": f"Model set to {model_type}"})
-
-
 if __name__ == '__main__':
-    app.run(debug=True, port=5001)
+    app.run(debug=True, port=5002)

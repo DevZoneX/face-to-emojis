@@ -68,7 +68,7 @@ def draw_landmarks_on_image(rgb_image, detection_result):
 
 def create_detector():
     base_options = python.BaseOptions(
-        model_asset_path='face_landmarker_v2_with_blendshapes.task')
+        model_asset_path='shape/face_landmarker_v2_with_blendshapes.task')
     options = vision.FaceLandmarkerOptions(
         base_options=base_options,
         output_face_blendshapes=True,

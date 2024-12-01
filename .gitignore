@@ -1,8 +1,5 @@
 cv_project
-emotion_detection/data1
-emotion_detection/data2
-emotion_detection/data3
-emotion_detection/data_analysis
-__pycache__
+emotion_detection/data
+*__pycache__
 *.pyc
 ssh_connect.py
