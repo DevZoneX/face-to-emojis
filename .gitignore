@@ -3,3 +3,4 @@ emotion_detection/data
 *__pycache__
 *.pyc
 ssh_connect.py
+myenv/
