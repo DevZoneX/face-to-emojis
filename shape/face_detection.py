@@ -41,8 +41,7 @@ while cap.isOpened():
     detection_result = detector.detect(mp_image)
 
     if detection_result.face_landmarks:
-        annotated_frame, mask = draw_landmarks_on_image(
-            rgb_frame, detection_result)
+        annotated_frame, mask = draw_landmarks_on_image(rgb_frame, detection_result)
 
         face_mask_resized = mask_resized(mask, shape)
         # face_mask_resized = circular_mask(face_mask_resized)
