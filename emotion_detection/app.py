@@ -21,9 +21,13 @@ emotion_labels = ["Angry", "Contempt", "Disgust",
                   "Fear", "Happy", "Neutral", "Sad", "Surprise"]
 
 
-df = pd.read_csv("datasets/df_measure_dist.csv")
-data_measures = df[["Mouth_Opening", "Left_Eye_Opening",
-                    "Right_Eye_Opening", "Smile_Width"]].to_numpy()
+df = pd.read_csv("datasets/df.csv")
+measures_features = ["mouth_opening", "left_eye_opening",
+                     "right_eye_opening", "smile_width"]
+emotions_features = ["anger", "contempt", "disgust",
+                     "fear", "joy", "neutral", "sadness", "surprise"]
+data_measures = df[measures_features].to_numpy()
+data_emotions = df[emotions_features].to_numpy()
 
 mp_face_mesh = mp.solutions.face_mesh
 face_mesh = mp_face_mesh.FaceMesh(refine_landmarks=True, max_num_faces=1)
@@ -34,10 +38,6 @@ EYE_POINTS = {
     "right": [374, 386]
 }
 EYEBROW_POINTS = [55, 105]
-
-df_emotion_to_emoji = pd.read_csv("datasets/df_emotion_to_emoji.csv")
-df_emotion = df_emotion_to_emoji.drop(columns=["emoji", "name"])
-data_emotions = df_emotion.to_numpy()
 
 transform = transforms.Compose([
     transforms.Grayscale(num_output_channels=1),
@@ -188,8 +188,8 @@ def get_emojis():
     idx = np.argmax(proba_final)
 
     suggested_emojis = [{
-        "name": df_emotion_to_emoji.iloc[idx]['name'],
-        "emoji": df_emotion_to_emoji.iloc[idx]['emoji']
+        "name": df.iloc[idx]['name'],
+        "emoji": df.iloc[idx]['emoji']
     }]
     return suggested_emojis
 
@@ -215,6 +215,7 @@ def emotion_feed():
         return jsonify(current_emotion)
 
     return jsonify({"error": "No emotion data available"})
+
 
 @app.route('/set_model', methods=['POST'])
 def set_model():
