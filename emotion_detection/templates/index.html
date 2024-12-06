@@ -275,6 +275,100 @@
             color: #93c5fd;
             /* Inactive text light blue */
         }
+
+        .notification {
+            position: fixed;
+            top: 45%;
+            right: 40%;
+            background-color: #4caf50;
+            color: white;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            font-size: 14px;
+            animation: fadeInOut 5s ease;
+        }
+
+        @keyframes fadeInOut {
+            0% {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+
+            10% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+
+            90% {
+                opacity: 1;
+            }
+
+            100% {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+        }
+
+        .upload-section {
+            display: none;
+            /* Initially hidden */
+            background-color: #1e293b;
+            /* Matches the container background */
+            border: 2px dashed #38bdf8;
+            /* Dashed border for file upload */
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px auto;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            transition: transform 0.3s ease, background 0.3s ease;
+            width: 100%;
+        }
+
+        .upload-section input[type="file"] {
+            display: block;
+            width: 100%;
+            margin: 10px auto;
+            font-family: 'Poppins', sans-serif;
+            color: #e5ebe7;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            background: linear-gradient(135deg, #38bdf8, #0ea5e9);
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        .upload-section input[type="file"]:hover {
+            background: linear-gradient(135deg, #2563eb, #1d4ed8);
+        }
+
+        #preview-container {
+            margin-top: 20px;
+            text-align: center;
+            color: #93c5fd;
+            font-family: 'Roboto', sans-serif;
+            font-size: 1rem;
+        }
+
+        #image-preview {
+            display: none;
+            /* Initially hidden */
+            margin-top: 10px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+            width: 100%;
+            height: 100%;
+        }
+
+        #preview-container p {
+            font-size: 1.1rem;
+            color: #38bdf8;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
     </style>
 </head>
 
@@ -296,15 +390,21 @@
                     <div class="toggle-slider"></div>
                 </div>
                 <div class="toggle-switch" id="model-toggle" onclick="toggleModel()">
-                    <span class="toggle-value" data-value="DeepFace">🧠 DeepFace</span>
-                    <span class="toggle-value" data-value="EmotionCNN">🧪 EmotionCNN</span>
+                    <span class="toggle-value" data-value="EmotionCNN">🧠 EmotionCNN</span>
+                    <span class="toggle-value" data-value="DeepFace">🧪 DeepFace</span>
                     <div class="toggle-slider"></div>
                 </div>
             </div>
 
-
-            <div class="video-section">
+            <!-- Section for Video or Upload -->
+            <div class="video-section" id="video-container">
                 <img src="{{ url_for('video_feed') }}" alt="Video stream">
+            </div>
+            <div class="upload-section" id="upload-container" style="display: none;">
+                <input type="file" id="fileUpload" accept="image/*" onchange="handleFileUpload(event)">
+                <div id="preview-container">
+                    <img id="image-preview" src="" alt="Preview" style="max-width: 100%; display: none;">
+                </div>
             </div>
 
             <div class="control-section">
@@ -323,7 +423,6 @@
             </div>
         </div>
     </div>
-
 
     <script>
         function fetchEmotion() {
@@ -367,55 +466,98 @@
                 .catch(error => console.error('Error fetching emotion:', error));
         }
 
-        function setModel() {
-            const modelType = document.getElementById("modelType").value;
-            fetch("/set_model", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ model_type: modelType }),
-            })
-                .then(response => response.json())
-                .then(data => alert(data.message))
-                .catch(error => console.error('Error setting model:', error));
+        async function toggleCamera() {
+            const toggle = document.getElementById('camera-toggle');
+            toggle.classList.toggle('active');
+            const isActive = toggle.classList.contains('active');
+
+            const videoContainer = document.getElementById('video-container');
+            const uploadContainer = document.getElementById('upload-container');
+
+            if (isActive) {
+                console.log("Upload selected");
+                videoContainer.style.display = 'none';
+                uploadContainer.style.display = 'block';
+            } else {
+                console.log("Camera selected");
+                videoContainer.style.display = 'flex';
+                uploadContainer.style.display = 'none';
+            }
+            await setMode(isActive ? 'Upload' : 'Camera');
         }
 
         function toggleModel() {
             const toggle = document.getElementById('model-toggle');
             toggle.classList.toggle('active');
             const isActive = toggle.classList.contains('active');
-            const modelType = isActive ? 'DeepFace' : 'EmotionCNN';  // Set model type based on the toggle position
+            const modelType = isActive ? 'DeepFace' : 'EmotionCNN';
 
             console.log(`${modelType} selected`);
 
-            // Send model type to the server
             fetch("/set_model", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ model_type: modelType }),
             })
                 .then(response => response.json())
-                .then(data => alert(data.message))
+                .then(data => {
+                    showNotification(data.message);
+                })
                 .catch(error => console.error('Error setting model:', error));
         }
 
-        setInterval(fetchEmotion, 1000); // Fetch emotion every second
-    </script>
-
-
-    <script>function toggleCamera() {
-            const toggle = document.getElementById('camera-toggle');
-            toggle.classList.toggle('active'); // Toggle the "active" class
-            const isActive = toggle.classList.contains('active');
-
-            if (isActive) {
-                console.log("Camera selected");
-                alert("Camera functionality activated.");
-            } else {
-                console.log("Upload selected");
-                alert("Upload functionality activated.");
-            }
+        function showNotification(message) {
+            const notification = document.createElement('div');
+            notification.className = 'notification';
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            setTimeout(() => {
+                notification.remove();
+            }, 5000);
         }
+
+        async function handleFileUpload(event) {
+            const file = event.target.files[0];
+            const preview = document.getElementById('image-preview');
+
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    preview.src = e.target.result;
+                    preview.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+
+                const formData = new FormData();
+                formData.append('file', file);
+
+                const response = await fetch('/upload_image', {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                const result = await response.json();
+                console.log(result);
+            } else {
+                preview.src = '';
+                preview.style.display = 'none';
+            }
+
+        }
+        async function setMode(mode) {
+            const response = await fetch('/set_mode', {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ mode: mode })
+            });
+
+            const result = await response.json();
+            console.log(result.message);
+        }
+
+        setInterval(fetchEmotion, 1000);
     </script>
 </body>
+
 
 </html>
