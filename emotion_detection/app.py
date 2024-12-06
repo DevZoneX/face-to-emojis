@@ -18,8 +18,18 @@ model_type = "EmotionCNN"
 emotion_labels = ["Angry", "Contempt", "Disgust", "Fear", "Happy", "Neutral", "Sad", "Surprise"] if model_type == "EmotionCNN" else ["Angry", "Disgust", "Fear", "Happy", "Neutral", "Sad", "Surprise"]
 
 
+<<<<<<< HEAD
 df = pd.read_csv("datasets/df_measure_dist.csv")
 data_measures = df[["Mouth_Opening", "Left_Eye_Opening", "Right_Eye_Opening", "Smile_Width"]].to_numpy()
+=======
+df = pd.read_csv("datasets/df.csv")
+measures_features = ["mouth_opening", "left_eye_opening",
+                     "right_eye_opening", "smile_width"]
+emotions_features = ["anger", "contempt", "disgust",
+                     "fear", "joy", "neutral", "sadness", "surprise"]
+data_measures = df[measures_features].to_numpy()
+data_emotions = df[emotions_features].to_numpy()
+>>>>>>> ea62134fa5c4942f89f379250da53def5fc643fb
 
 mp_face_mesh = mp.solutions.face_mesh
 face_mesh = mp_face_mesh.FaceMesh(refine_landmarks=True, max_num_faces=1)
@@ -31,9 +41,29 @@ EYE_POINTS = {
 }
 EYEBROW_POINTS = [55, 105]
 
+<<<<<<< HEAD
 df_emotion_to_emoji = pd.read_csv("datasets/df_emotion_to_emoji.csv")
 df_emotion = df_emotion_to_emoji.drop(columns=["emoji", "name"])
 data_emotions = df_emotion.to_numpy()
+=======
+transform = transforms.Compose([
+    transforms.Grayscale(num_output_channels=1),
+    transforms.Resize((48, 48)),
+    transforms.ToTensor(),
+    transforms.Normalize(mean=[0.5], std=[0.5])
+])
+
+face_cascade = cv2.CascadeClassifier(
+    cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+camera_index = 0
+current_emotion = {}
+
+trained_model = EmotionCNN().to(device)
+trained_model.load_state_dict(torch.load(
+    'models/emotion_all_cnn3.pth', map_location=device, weights_only=True))
+trained_model.eval()
+
+>>>>>>> ea62134fa5c4942f89f379250da53def5fc643fb
 
 def calculate_distance(point1, point2):
     """Calcule la distance euclidienne entre deux points."""
@@ -78,7 +108,77 @@ def get_vector_measures(rgb_frame, frame):
 
     return vect_measure
 
+<<<<<<< HEAD
 def get_emojis2():
+=======
+
+def get_emoji_from_image(image_RGB):
+    gray = cv2.cvtColor(image_RGB, cv2.COLOR_RGB2GRAY)
+    face = face_cascade.detectMultiScale(gray, 1.1, 4)
+    (x, y, w, h) = face[0]
+    face_roi = image_RGB[y:y+h, x:x +
+                         w] if model_type == "pretrained" else gray[y:y+h, x:x+w]
+
+    current_emotion, proba = predict_emotion(face_roi)
+    vector_measure = get_vector_measures(image_RGB, image_RGB)
+    distances_measures = np.linalg.norm(data_measures - vector_measure, axis=1)
+    distances_emotions = np.linalg.norm(data_emotions - proba, axis=1)
+
+    proba_measures = np.exp(-distances_measures) / \
+        np.sum(np.exp(-distances_measures))
+    proba_emotions = np.exp(-distances_emotions) / \
+        np.sum(np.exp(-distances_emotions))
+
+    alpha_emotions = 0.5
+    proba_final = alpha_emotions * proba_emotions + \
+        (1 - alpha_emotions) * proba_measures
+
+    idx = np.argmax(proba_final)
+
+    return df.iloc[idx]['emoji']
+
+
+def generate_frames():
+    global current_emotion
+    global vector_measure
+    global proba
+    camera = cv2.VideoCapture(camera_index)
+    if not camera.isOpened():
+        print(f"Error: Could not access camera with index {camera_index}")
+        return
+
+    while True:
+        success, frame = camera.read()
+        if not success:
+            break
+        else:
+            rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            gray = cv2.cvtColor(rgb_frame, cv2.COLOR_RGB2GRAY)
+
+            faces = face_cascade.detectMultiScale(gray, 1.1, 4)
+
+            for (x, y, w, h) in faces:
+                face_roi = frame[y:y+h, x:x +
+                                 w] if model_type == "pretrained" else gray[y:y+h, x:x+w]
+
+                current_emotion, proba = predict_emotion(face_roi)
+                vector_measure = get_vector_measures(rgb_frame, frame)
+
+                cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 0, 0), 2)
+
+            ret, buffer = cv2.imencode('.jpg', frame)
+            frame = buffer.tobytes()
+
+            yield (b'--frame\r\n'
+                   b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+
+
+def get_emojis():
+    global current_emotion
+    global vector_measure
+    global proba
+
+>>>>>>> ea62134fa5c4942f89f379250da53def5fc643fb
     distances_measures = np.linalg.norm(data_measures - vector_measure, axis=1)
     distances_emotions = np.linalg.norm(data_emotions - proba, axis=1)
 
@@ -94,8 +194,8 @@ def get_emojis2():
     idx = np.argmax(proba_final)
 
     suggested_emojis = [{
-        "name": df_emotion_to_emoji.iloc[idx]['name'],
-        "emoji": df_emotion_to_emoji.iloc[idx]['emoji']
+        "name": df.iloc[idx]['name'],
+        "emoji": df.iloc[idx]['emoji']
     }]
     return suggested_emojis
 
@@ -249,6 +349,7 @@ def emotion_feed():
     current_emotion['emojis'] = get_emojis()
 
     return jsonify(current_emotion)
+
 
 
 @app.route('/set_model', methods=['POST'])
