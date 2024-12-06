@@ -133,6 +133,32 @@ def get_vector_measures(rgb_frame, frame):
     return vect_measure
 
 
+def get_emoji_from_image(image_RGB):
+    gray = cv2.cvtColor(image_RGB, cv2.COLOR_RGB2GRAY)
+    face = face_cascade.detectMultiScale(gray, 1.1, 4)
+    (x, y, w, h) = face[0]
+    face_roi = image_RGB[y:y+h, x:x +
+                         w] if model_type == "pretrained" else gray[y:y+h, x:x+w]
+
+    current_emotion, proba = predict_emotion(face_roi)
+    vector_measure = get_vector_measures(image_RGB, image_RGB)
+    distances_measures = np.linalg.norm(data_measures - vector_measure, axis=1)
+    distances_emotions = np.linalg.norm(data_emotions - proba, axis=1)
+
+    proba_measures = np.exp(-distances_measures) / \
+        np.sum(np.exp(-distances_measures))
+    proba_emotions = np.exp(-distances_emotions) / \
+        np.sum(np.exp(-distances_emotions))
+
+    alpha_emotions = 0.5
+    proba_final = alpha_emotions * proba_emotions + \
+        (1 - alpha_emotions) * proba_measures
+
+    idx = np.argmax(proba_final)
+
+    return df.iloc[idx]['emoji']
+
+
 def generate_frames():
     global current_emotion
     global vector_measure
