@@ -1,4 +1,4 @@
-from flask import Flask, render_template, Response, jsonify
+from flask import Flask, render_template, Response, jsonify, request
 import cv2
 import torch
 import torchvision.transforms as transforms
@@ -58,7 +58,7 @@ current_emotion = {}
 
 trained_model = EmotionCNN().to(device)
 trained_model.load_state_dict(torch.load(
-    'models/emotion_cnn.pth', map_location=device, weights_only=True))
+    'models/emotion_all_cnn3.pth', map_location=device, weights_only=True))
 trained_model.eval()
 
 
@@ -236,6 +236,16 @@ def emotion_feed():
         return jsonify(current_emotion)
 
     return jsonify({"error": "No emotion data available"})
+
+@app.route('/set_model', methods=['POST'])
+def set_model():
+    global model_type
+    data = request.get_json()
+
+    if data and 'model_type' in data:
+        model_type = data['model_type']
+        return jsonify({"message": f"Model set to {model_type} successfully."})
+    return jsonify({"error": "Invalid request"})
 
 
 if __name__ == '__main__':

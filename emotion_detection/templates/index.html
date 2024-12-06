@@ -17,8 +17,38 @@
         }
 
         body {
-            font-family: 'Roboto', sans-serif;
             background: linear-gradient(135deg, #0d1117, #1f2937);
+        }
+
+        .title-container {
+            text-align: center;
+            margin: 0 auto;
+            padding: 20px 20px 0;
+        }
+
+        .title-container h1 {
+            font-size: 2.5rem;
+            font-family: 'Poppins', sans-serif;
+            color: #93c5fd;
+            /* Light blue text color */
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+            line-height: 1.4;
+            letter-spacing: 1.2px;
+        }
+
+        .title-container h1 .highlight {
+            color: #38bdf8;
+            background: linear-gradient(135deg, #38bdf8, #0ea5e9);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: 600;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+
+        .parent-container {
+            margin-top: -50px;
+            font-family: 'Roboto', sans-serif;
             color: #e5e7eb;
             display: flex;
             align-items: center;
@@ -28,7 +58,7 @@
 
         .container {
             width: 90%;
-            max-width: 1300px;
+            max-width: 1500px;
             height: 80vh;
             display: flex;
             background: #1e293b;
@@ -68,6 +98,7 @@
             flex-direction: column;
             justify-content: flex-start;
         }
+
         .top-section h2 {
             text-align: center;
             font-size: 1.5rem;
@@ -79,11 +110,12 @@
 
 
         .percentage {
-            width: 10%;
-            text-align: right;
-            margin-left: 10px;
+            width: 100%;
+            text-align: center;
+
+            /* margin-left: 10px; */
             color: #93c5fd;
-            padding-right: 10px;
+            /* padding-right: 10px; */
             font-weight: bold;
         }
 
@@ -117,6 +149,7 @@
             display: flex;
             flex-direction: column-reverse;
         }
+
         .progress {
             width: 100%;
             background: linear-gradient(90deg, #3b82f6, #2563eb);
@@ -131,6 +164,7 @@
             text-align: center;
             margin-top: 60px;
         }
+
         .bottom-section h2 {
             text-align: center;
             font-size: 1.5rem;
@@ -139,6 +173,7 @@
             border-bottom: 2px solid #38bdf8;
             padding-bottom: 10px;
         }
+
         .emoji-container {
             display: flex;
             flex-wrap: wrap;
@@ -155,12 +190,14 @@
             margin: 15px;
             transition: transform 0.3s ease, opacity 0.3s ease;
         }
+
         .emoji-label {
             font-size: 1.2rem;
             color: #93c5fd;
             margin-top: 10px;
             font-weight: bold;
         }
+
         .emoji-item,
         .emoji-label {
             display: flex;
@@ -169,31 +206,124 @@
             justify-content: center;
             text-align: center;
         }
+
+        .button-container {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 10px;
+            background-color: #1e293b;
+            /* Matches other sections */
+        }
+
+        .toggle-switch {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 260px;
+            height: 50px;
+            background: #334155;
+            /* Darker background for contrast */
+            border-radius: 25px;
+            cursor: pointer;
+            margin: 15px 0;
+            padding: 5px;
+            box-shadow: 0 5px 10px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .toggle-switch .toggle-value {
+            flex: 1;
+            text-align: center;
+            font-size: 0.9rem;
+            font-family: 'Poppins', sans-serif;
+            color: #e5e7eb;
+            /* Light text color */
+            z-index: 1;
+            line-height: 40px;
+            /* Center align the text vertically */
+            font-weight: bold;
+            transition: color 0.3s ease;
+        }
+
+        .toggle-switch .toggle-slider {
+            position: absolute;
+            top: 5px;
+            left: 5px;
+            width: 50%;
+            height: 40px;
+            background: linear-gradient(135deg, #38bdf8, #0ea5e9);
+            /* Gradient for active background */
+            border-radius: 20px;
+            transition: left 0.3s ease, background 0.3s ease;
+            z-index: 0;
+        }
+
+        .toggle-switch.active .toggle-slider {
+            left: calc(100% - 50% - 5px);
+            /* Move the slider to the right */
+        }
+
+        .toggle-switch.active .toggle-value:nth-child(1) {
+            color: #93c5fd;
+            /* Inactive text light blue */
+        }
+
+        .toggle-switch:not(.active) .toggle-value:nth-child(2) {
+            color: #93c5fd;
+            /* Inactive text light blue */
+        }
     </style>
 </head>
 
 <body>
-    <div class="container">
-        <div class="video-section">
-            <img src="{{ url_for('video_feed') }}" alt="Video stream">
-        </div>
+    <div class="title-container">
+        <h1>
+            Emotion Detection <span class="highlight">Powering</span> an Emoji <span class="highlight">Recommendation
+                Engine</span>
+        </h1>
+    </div>
 
-        <div class="control-section">
-            <div class="top-section">
-                <h2>😊 How Are You <span style="color: violet;">Feeling</span> Today?</h2>
-                <div class="emotion-container" id="emotion-label">
-                    <!-- Emotion percentages will be dynamically added here -->
+    <div class="parent-container">
+        <div class="container">
+
+            <div class="button-container">
+                <div class="toggle-switch" id="camera-toggle" onclick="toggleCamera()">
+                    <span class="toggle-value" data-value="Camera">📷 Camera</span>
+                    <span class="toggle-value" data-value="Upload">📂 Upload</span>
+                    <div class="toggle-slider"></div>
+                </div>
+                <div class="toggle-switch" id="model-toggle" onclick="toggleModel()">
+                    <span class="toggle-value" data-value="DeepFace">🧠 DeepFace</span>
+                    <span class="toggle-value" data-value="EmotionCNN">🧪 EmotionCNN</span>
+                    <div class="toggle-slider"></div>
                 </div>
             </div>
 
-            <div class="bottom-section">
-                <h2>🎭 Suggested <span style="color: violet;">Emojis</span> For You</h2>
-                <div class="emoji-container" id="emoji-label"></div>
-                <!-- Emotion percentages will be dynamically added here -->
+
+            <div class="video-section">
+                <img src="{{ url_for('video_feed') }}" alt="Video stream">
+            </div>
+
+            <div class="control-section">
+                <div class="top-section">
+                    <h2>😊 How Are You <span style="color: violet;">Feeling</span> Today?</h2>
+                    <div class="emotion-container" id="emotion-label">
+                        <!-- Emotion percentages will be dynamically added here -->
+                    </div>
+                </div>
+
+                <div class="bottom-section">
+                    <h2>🎭 Suggested <span style="color: violet;">Emojis</span> For You</h2>
+                    <div class="emoji-container" id="emoji-label"></div>
+                    <!-- Emotion percentages will be dynamically added here -->
+                </div>
             </div>
         </div>
     </div>
-    </div>
+
 
     <script>
         function fetchEmotion() {
@@ -249,7 +379,42 @@
                 .catch(error => console.error('Error setting model:', error));
         }
 
+        function toggleModel() {
+            const toggle = document.getElementById('model-toggle');
+            toggle.classList.toggle('active');
+            const isActive = toggle.classList.contains('active');
+            const modelType = isActive ? 'DeepFace' : 'EmotionCNN';  // Set model type based on the toggle position
+
+            console.log(`${modelType} selected`);
+
+            // Send model type to the server
+            fetch("/set_model", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ model_type: modelType }),
+            })
+                .then(response => response.json())
+                .then(data => alert(data.message))
+                .catch(error => console.error('Error setting model:', error));
+        }
+
         setInterval(fetchEmotion, 1000); // Fetch emotion every second
+    </script>
+
+
+    <script>function toggleCamera() {
+            const toggle = document.getElementById('camera-toggle');
+            toggle.classList.toggle('active'); // Toggle the "active" class
+            const isActive = toggle.classList.contains('active');
+
+            if (isActive) {
+                console.log("Camera selected");
+                alert("Camera functionality activated.");
+            } else {
+                console.log("Upload selected");
+                alert("Upload functionality activated.");
+            }
+        }
     </script>
 </body>
 
