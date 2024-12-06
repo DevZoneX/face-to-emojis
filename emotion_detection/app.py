@@ -18,10 +18,6 @@ model_type = "EmotionCNN"
 emotion_labels = ["Angry", "Contempt", "Disgust", "Fear", "Happy", "Neutral", "Sad", "Surprise"] if model_type == "EmotionCNN" else ["Angry", "Disgust", "Fear", "Happy", "Neutral", "Sad", "Surprise"]
 
 
-<<<<<<< HEAD
-df = pd.read_csv("datasets/df_measure_dist.csv")
-data_measures = df[["Mouth_Opening", "Left_Eye_Opening", "Right_Eye_Opening", "Smile_Width"]].to_numpy()
-=======
 df = pd.read_csv("datasets/df.csv")
 measures_features = ["mouth_opening", "left_eye_opening",
                      "right_eye_opening", "smile_width"]
@@ -29,7 +25,6 @@ emotions_features = ["anger", "contempt", "disgust",
                      "fear", "joy", "neutral", "sadness", "surprise"]
 data_measures = df[measures_features].to_numpy()
 data_emotions = df[emotions_features].to_numpy()
->>>>>>> ea62134fa5c4942f89f379250da53def5fc643fb
 
 mp_face_mesh = mp.solutions.face_mesh
 face_mesh = mp_face_mesh.FaceMesh(refine_landmarks=True, max_num_faces=1)
@@ -41,11 +36,6 @@ EYE_POINTS = {
 }
 EYEBROW_POINTS = [55, 105]
 
-<<<<<<< HEAD
-df_emotion_to_emoji = pd.read_csv("datasets/df_emotion_to_emoji.csv")
-df_emotion = df_emotion_to_emoji.drop(columns=["emoji", "name"])
-data_emotions = df_emotion.to_numpy()
-=======
 transform = transforms.Compose([
     transforms.Grayscale(num_output_channels=1),
     transforms.Resize((48, 48)),
@@ -63,7 +53,6 @@ trained_model.load_state_dict(torch.load(
     'models/emotion_all_cnn3.pth', map_location=device, weights_only=True))
 trained_model.eval()
 
->>>>>>> ea62134fa5c4942f89f379250da53def5fc643fb
 
 def calculate_distance(point1, point2):
     """Calcule la distance euclidienne entre deux points."""
@@ -108,9 +97,6 @@ def get_vector_measures(rgb_frame, frame):
 
     return vect_measure
 
-<<<<<<< HEAD
-def get_emojis2():
-=======
 
 def get_emoji_from_image(image_RGB):
     gray = cv2.cvtColor(image_RGB, cv2.COLOR_RGB2GRAY)
@@ -178,7 +164,6 @@ def get_emojis():
     global vector_measure
     global proba
 
->>>>>>> ea62134fa5c4942f89f379250da53def5fc643fb
     distances_measures = np.linalg.norm(data_measures - vector_measure, axis=1)
     distances_emotions = np.linalg.norm(data_emotions - proba, axis=1)
 
