@@ -1,16 +1,16 @@
-emoji,name,anger,contempt,disgust,fear,joy,neutral,sadness,surprise
-😀,grinning face,0.06,0.06,0.06,0.06,0.69,0.10,0.06,0.14
-😂,face with tears of joy,0.0,0.0,0.06,0.06,0.94,0.0,0.0,0.33
-😉,winking face,0.0,0.14,0.0,0.0,0.44,0.2,0.08,0.28
-😏,smirking face,0.22,0.35,0.28,0.14,0.22,0.22,0.22,0.11
-😐,neutral face,0.14,0.10,0.31,0.17,0.06,1.0,0.25,0.31
-😑,expressionless face,0.28,0.30,0.47,0.14,0.0,1.0,0.33,0.19
-😒,unamused face,0.58,0.65,0.64,0.17,0.0,0.20,0.42,0.11
-😔,pensive face,0.25,0.05,0.31,0.28,0.0,0.25,0.72,0.19
-😛,face with tongue,0.0,0.0,0.0,0.03,0.69,0.0,0.10,0.28
-😜,winking face with tongue,0.0,0.0,0.0,0.06,0.64,0.10,0.0,0.28
-😞,disappointed face,0.39,0.10,0.5,0.33,0.0,0.92,0.06,0.06
-😡,pouting face,1.0,0.50,0.56,0.11,0.0,0.0,0.36,0.08
-😨,fearful face,0.17,0.06,0.33,0.97,0.0,0.10,0.56,0.39
-😬,grimacing face,0.14,0.25,0.28,0.44,0.17,0.30,0.11,0.25
-😊,smiling face with smiling eyes,0.0,0.0,0.0,0.0,0.92,0.10,0.0,0.33
+emoji,name,anger,contempt,disgust,fear,joy,neutral,sadness,surprise,mouth_opening,left_eye_opening,right_eye_opening,smile_width
+😀,grinning face,0,0,0,0,0.8,0,0,0.2,20,9,9,60
+😊,smiling face with smiling eyes,0,0.1,0,0,0.6,0.3,0,0,0,4,4,55
+😐,neutral face,0,0.2,0,0,0,0.8,0,0,0,9,9,40
+😑,expressionless face,0,0.2,0.1,0,0,0.7,0,0,0,4,4,40
+😒,unamused face,0.2,0.7,0.1,0,0,0,0,0,0,8,8,40
+😔,pensive face,0.1,0,0,0,0,0.2,0.7,0,0,4,4,40
+😢,crying face,0,0,0,0,0,0.1,0.9,0,0,9,9,40
+😡,pouting face,1,0,0,0,0,0,0,0,0,9,9,40
+😤,face with steam from nose,0.8,0.2,0,0,0,0,0,0,0,4,4,40
+😨,fearful face,0,0,0.3,0.7,0,0,0,0,20,9,9,50
+😱,frightened face,0,0,0,1,0,0,0,0,20,10,10
+🤢,disgust,0.1,0.1,0.8,0,0,0,0,0,0,9,9
+🤮,puking,0,0.1,0.9,0,0,0,0,0,15,5,5
+😲,surprise,0.1,0,0,0,0,0,0,0.9,15,9,9
+🤨,wondering,0.2,0,0.1,0,0,0,0,0.7,0,9,9

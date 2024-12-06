@@ -35,11 +35,6 @@ EYE_POINTS = {
 }
 EYEBROW_POINTS = [55, 105]
 
-ds = load_dataset("valhalla/emoji-dataset")
-emoji_of_interest = [0, 2, 113, 1335, 1446, 2006, 2017,
-                     2039, 2050, 2072, 2350, 2416, 2450, 2539, 2594]
-image = [ds['train'][i]['image'] for i in emoji_of_interest]
-
 df_emotion_to_emoji = pd.read_csv("datasets/df_emotion_to_emoji.csv")
 df_emotion = df_emotion_to_emoji.drop(columns=["emoji", "name"])
 data_emotions = df_emotion.to_numpy()
@@ -122,21 +117,18 @@ def predict_emotion(face_roi):
         emotion_data = {emotion_labels[i]: float(
             round(result[emotion_labels[i].lower()], 2)) for i in range(len(emotion_labels))}
 
-        return emotion_data, None
+        return None  # !!!!!!! il faut un vecteur de probabilité ici
 
 
 def get_vector_measures(rgb_frame, frame):
     result = face_mesh.process(rgb_frame)
-    if result.multi_face_landmarks:
-        for face_landmarks in result.multi_face_landmarks:
-            analysis = analyze_face_landmarks(frame, face_landmarks)
-            mouth_opening = analysis['mouth_opening']
-            left_eye_opening = analysis['eye_opening']['left']
-            right_eye_opening = analysis['eye_opening']['right']
-            smile_width = analysis['smile_width']
+    vect_measure = [10, 9, 9, 40]
 
-            vect_measure = [mouth_opening, left_eye_opening,
-                            right_eye_opening, smile_width]
+    if result.multi_face_landmarks:
+        face_landmarks = result.multi_face_landmarks[0]
+        analysis = analyze_face_landmarks(frame, face_landmarks)
+        vect_measure = [analysis['mouth_opening'], analysis['eye_opening']['left'],
+                        analysis['eye_opening']['right'], analysis['smile_width']]
 
     return vect_measure
 
@@ -181,19 +173,6 @@ def get_emojis():
     global vector_measure
     global proba
 
-    emoji_map = {
-        "Angry": "😡",
-        "Contempt": "😒",
-        "Disgust": "🤢",
-        "Fear": "😨",
-        "Happy": "😊",
-        "Neutral": "😐",
-        "Sad": "😢",
-        "Surprise": "😲"
-    }
-
-    suggested_emojis = []
-
     distances_measures = np.linalg.norm(data_measures - vector_measure, axis=1)
     distances_emotions = np.linalg.norm(data_emotions - proba, axis=1)
 
@@ -208,10 +187,10 @@ def get_emojis():
 
     idx = np.argmax(proba_final)
 
-    suggested_emojis.append({
+    suggested_emojis = [{
         "name": df_emotion_to_emoji.iloc[idx]['name'],
         "emoji": df_emotion_to_emoji.iloc[idx]['emoji']
-    })
+    }]
     return suggested_emojis
 
 
