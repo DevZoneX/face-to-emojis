@@ -15,7 +15,8 @@ app = Flask(__name__)
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 model_type = "EmotionCNN"
 
-emotion_labels = ["Angry", "Contempt", "Disgust", "Fear", "Happy", "Neutral", "Sad", "Surprise"] if model_type == "EmotionCNN" else ["Angry", "Disgust", "Fear", "Happy", "Neutral", "Sad", "Surprise"]
+emotion_labels = ["Angry", "Contempt", "Disgust", "Fear", "Happy", "Neutral", "Sad",
+                  "Surprise"] if model_type == "EmotionCNN" else ["Angry", "Disgust", "Fear", "Happy", "Neutral", "Sad", "Surprise"]
 
 
 df = pd.read_csv("datasets/df.csv")
@@ -185,12 +186,6 @@ def get_emojis():
     return suggested_emojis
 
 
-
-
-
-
-
-
 current_mode = "Camera"
 
 transform = transforms.Compose([
@@ -201,12 +196,15 @@ transform = transforms.Compose([
 ])
 
 trained_model = EmotionCNN().to(device)
-trained_model.load_state_dict( torch.load('models/emotion_all_cnn3.pth', map_location=device, weights_only=True) )
+trained_model.load_state_dict(torch.load(
+    'models/emotion_all_cnn3.pth', map_location=device, weights_only=True))
 trained_model.eval()
 
-face_cascade = cv2.CascadeClassifier( cv2.data.haarcascades + 'haarcascade_frontalface_default.xml' )
+face_cascade = cv2.CascadeClassifier(
+    cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
 current_emotion = {}
 probas = None
+
 
 def predict_emotion(face_roi):
     """Predicts emotion based on the selected model."""
@@ -237,7 +235,8 @@ def predict_emotion(face_roi):
             round(result[emotion_labels[i].lower()], 2)) for i in range(len(emotion_labels))}
 
         # Normalize the probabilities to create a vector (if necessary)
-        probabilities = np.array([result[label.lower()] for label in emotion_labels])
+        probabilities = np.array([result[label.lower()]
+                                 for label in emotion_labels])
         probabilities /= probabilities.sum()  # Normalize to ensure it sums to 1
 
         return emotion_data, probabilities
@@ -269,25 +268,28 @@ def generate_frames():
         gray = cv2.cvtColor(rgb_frame, cv2.COLOR_RGB2GRAY)
 
         # Detect faces
-        faces = face_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=4)
+        faces = face_cascade.detectMultiScale(
+            gray, scaleFactor=1.1, minNeighbors=4)
 
         if len(faces) > 0:
             # Choose the largest face based on area (w * h)
-            largest_face = max(faces, key=lambda f: f[2] * f[3])  # (x, y, w, h)
+            largest_face = max(
+                faces, key=lambda f: f[2] * f[3])  # (x, y, w, h)
 
             # Extract the largest face's coordinates
             x, y, w, h = largest_face
 
             # Get the face ROI (gray or color depending on the model)
-            face_roi = frame[y:y+h, x:x+w] if model_type == "DeepFace" else gray[y:y+h, x:x+w]
+            face_roi = frame[y:y+h, x:x +
+                             w] if model_type == "DeepFace" else gray[y:y+h, x:x+w]
 
             if current_mode == "Camera":
                 # Predict emotion for the largest face
                 current_emotion, proba = predict_emotion(face_roi)
 
             # Update vector measures (additional processing, if needed)
-            
-            ######### vector_measure = get_vector_measures(rgb_frame, frame)
+
+            # vector_measure = get_vector_measures(rgb_frame, frame)
 
             # Draw rectangle around the detected face
             cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 0, 0), 2)
@@ -305,17 +307,6 @@ def generate_frames():
                b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
 
 
-def get_emojis():
-    global current_emotion
-    global vector_measure
-    global proba
-
-    return [{
-        "name": 'Test',
-        "emoji": '😀'
-    }]
-
-
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -325,7 +316,7 @@ def index():
 def video_feed():
     if current_mode == "Camera":
         return Response(generate_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
-    
+
 
 @app.route('/emotion_feed', methods=['GET'])
 def emotion_feed():
@@ -336,7 +327,6 @@ def emotion_feed():
     return jsonify(current_emotion)
 
 
-
 @app.route('/set_model', methods=['POST'])
 def set_model():
     global model_type
@@ -345,9 +335,11 @@ def set_model():
 
     if data and 'model_type' in data:
         model_type = data['model_type']
-        emotion_labels = ["Angry", "Contempt", "Disgust", "Fear", "Happy", "Neutral", "Sad", "Surprise"] if model_type == "EmotionCNN" else ["Angry", "Disgust", "Fear", "Happy", "Neutral", "Sad", "Surprise"]
+        emotion_labels = ["Angry", "Contempt", "Disgust", "Fear", "Happy", "Neutral", "Sad", "Surprise"] if model_type == "EmotionCNN" else [
+            "Angry", "Disgust", "Fear", "Happy", "Neutral", "Sad", "Surprise"]
         return jsonify({"message": f"Model set to {model_type} successfully."})
     return jsonify({"error": "Invalid request"})
+
 
 @app.route('/upload_image', methods=['POST'])
 def upload_image():
@@ -392,6 +384,7 @@ def set_mode():
             current_mode = "Camera"
             return jsonify({"message": "Switched to Camera Mode"})
     return jsonify({"error": "Invalid request"}), 400
+
 
 if __name__ == '__main__':
     app.run(debug=True, port=5002)
