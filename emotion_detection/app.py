@@ -165,9 +165,9 @@ def generate_frames():
                 # Predict emotion for the largest face
                 current_emotion, probas = predict_emotion(face_roi)
 
-            # Update vector measures (additional processing, if needed)
+                # Update vector measures (additional processing, if needed)
 
-            vector_measure = get_vector_measures(rgb_frame, frame)
+                vector_measure = get_vector_measures(rgb_frame, frame)
 
             # Draw rectangle around the detected face
             cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 0, 0), 2)
@@ -231,6 +231,7 @@ def set_model():
 def upload_image():
     global current_emotion
     global probas
+    global vector_measure
 
     if 'file' not in request.files:
         return jsonify({"error": "No file part"}), 400
@@ -249,6 +250,7 @@ def upload_image():
 
         # Detect emotion using existing model logic
         current_emotion, probas = predict_emotion(gray_img)
+        vector_measure = get_vector_measures(img, img)
 
         current_emotion['emojis'] = get_emojis()
 
