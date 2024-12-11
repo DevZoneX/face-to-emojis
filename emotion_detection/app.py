@@ -21,12 +21,11 @@ emotion_labels = ["Angry", "Contempt", "Disgust", "Fear", "Happy", "Neutral", "S
 df = pd.read_csv("datasets/df.csv")
 measures_features = ["mouth_opening", "left_eye_opening",
                      "right_eye_opening", "smile_width"]
-emotions_features = ["anger", "contempt", "disgust",
-                     "fear", "joy", "neutral", "sadness", "surprise"]
+emotions_features = ["anger", "contempt", "disgust", "fear", "joy", "neutral", "sadness", "surprise"] if model_type == "EmotionCNN" else ["anger", "disgust", "fear", "joy", "neutral", "sadness", "surprise"]
 data_measures = df[measures_features].to_numpy()
 data_emotions = df[emotions_features].to_numpy()
 vector_measure = [10, 9, 9, 40]
-probas = np.array([0.125]*8)
+probas = np.array([0.125]*8) if model_type == "EmotionCNN" else np.array([0.125]*7)
 
 
 def get_emojis():
@@ -45,12 +44,27 @@ def get_emojis():
 
     idx = np.argmin(proba_final)
 
+    max_values = {
+        "mouth_opening": 60,
+        "left_eye_opening": 25,
+        "right_eye_opening": 25,
+        "smile_width": 90 
+    }
+
     suggested_emojis = [{
         "name": df.iloc[idx]['name'],
-        "emoji": df.iloc[idx]['emoji']
+        "emoji": df.iloc[idx]['emoji'],
+        "measures": {
+            "mouth_opening": round((vector_measure[0] / max_values["mouth_opening"]) * 100, 2),
+            "left_eye_opening": round((vector_measure[1] / max_values["left_eye_opening"]) * 100, 2),
+            "right_eye_opening": round((vector_measure[2] / max_values["right_eye_opening"]) * 100, 2),
+            "smile_width": round((vector_measure[3] / max_values["smile_width"]) * 100, 2),
+        }
     }]
 
+
     return suggested_emojis
+
 
 
 current_mode = "Camera"
@@ -195,12 +209,20 @@ def emotion_feed():
 def set_model():
     global model_type
     global emotion_labels
+    global probas
+    global emotions_features
+    global data_emotions
     data = request.get_json()
 
     if data and 'model_type' in data:
         model_type = data['model_type']
         emotion_labels = ["Angry", "Contempt", "Disgust", "Fear", "Happy", "Neutral", "Sad", "Surprise"] if model_type == "EmotionCNN" else [
             "Angry", "Disgust", "Fear", "Happy", "Neutral", "Sad", "Surprise"]
+        
+        probas = np.array([0.125]*8) if model_type == "EmotionCNN" else np.array([0.125]*7)
+        emotions_features = ["anger", "contempt", "disgust", "fear", "joy", "neutral", "sadness", "surprise"] if model_type == "EmotionCNN" else ["anger", "disgust", "fear", "joy", "neutral", "sadness", "surprise"]
+        data_emotions = df[emotions_features].to_numpy()
+
         return jsonify({"message": f"Model set to {model_type} successfully."})
     return jsonify({"error": "Invalid request"})
 
