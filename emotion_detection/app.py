@@ -1,20 +1,19 @@
 from flask import Flask, render_template, Response, jsonify, request
-import cv2
-import torch
+from app_utils.utils import get_vector_measures
 import torchvision.transforms as transforms
 from PIL import Image
 import torch.nn.functional as F
 from model_utils.model import EmotionCNN
 from deepface import DeepFace
-import mediapipe as mp
 import pandas as pd
 import numpy as np
+import cv2
+import torch
 
 app = Flask(__name__)
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 model_type = "EmotionCNN"
-
 emotion_labels = ["Angry", "Contempt", "Disgust", "Fear", "Happy", "Neutral", "Sad",
                   "Surprise"] if model_type == "EmotionCNN" else ["Angry", "Disgust", "Fear", "Happy", "Neutral", "Sad", "Surprise"]
 
@@ -26,163 +25,31 @@ emotions_features = ["anger", "contempt", "disgust",
                      "fear", "joy", "neutral", "sadness", "surprise"]
 data_measures = df[measures_features].to_numpy()
 data_emotions = df[emotions_features].to_numpy()
-
-mp_face_mesh = mp.solutions.face_mesh
-face_mesh = mp_face_mesh.FaceMesh(refine_landmarks=True, max_num_faces=1)
-
-MOUTH_POINTS = [13, 14, 78, 308]
-EYE_POINTS = {
-    "left": [145, 159],
-    "right": [374, 386]
-}
-EYEBROW_POINTS = [55, 105]
-
-transform = transforms.Compose([
-    transforms.Grayscale(num_output_channels=1),
-    transforms.Resize((48, 48)),
-    transforms.ToTensor(),
-    transforms.Normalize(mean=[0.5], std=[0.5])
-])
-
-face_cascade = cv2.CascadeClassifier(
-    cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
-camera_index = 0
-current_emotion = {}
-
-trained_model = EmotionCNN().to(device)
-trained_model.load_state_dict(torch.load(
-    'models/emotion_all_cnn3.pth', map_location=device, weights_only=True))
-trained_model.eval()
-
-
-def calculate_distance(point1, point2):
-    """Calcule la distance euclidienne entre deux points."""
-    return np.linalg.norm(np.array(point1) - np.array(point2))
-
-
-def analyze_face_landmarks(image, landmarks):
-    """Analyse les caractéristiques faciales basées sur les landmarks."""
-    h, w, _ = image.shape
-    results = {}
-
-    coords = [(int(landmark.x * w), int(landmark.y * h))
-              for landmark in landmarks.landmark]
-
-    mouth_opening = calculate_distance(
-        coords[MOUTH_POINTS[0]], coords[MOUTH_POINTS[1]])
-    results["mouth_opening"] = mouth_opening
-
-    left_eye_opening = calculate_distance(
-        coords[EYE_POINTS["left"][0]], coords[EYE_POINTS["left"][1]])
-    right_eye_opening = calculate_distance(
-        coords[EYE_POINTS["right"][0]], coords[EYE_POINTS["right"][1]])
-    results["eye_opening"] = {
-        "left": left_eye_opening, "right": right_eye_opening}
-
-    smile_width = calculate_distance(
-        coords[MOUTH_POINTS[2]], coords[MOUTH_POINTS[3]])
-    results["smile_width"] = smile_width
-
-    return results
-
-
-def get_vector_measures(rgb_frame, frame):
-    result = face_mesh.process(rgb_frame)
-    vect_measure = [10, 9, 9, 40]
-
-    if result.multi_face_landmarks:
-        face_landmarks = result.multi_face_landmarks[0]
-        analysis = analyze_face_landmarks(frame, face_landmarks)
-        vect_measure = [analysis['mouth_opening'], analysis['eye_opening']['left'],
-                        analysis['eye_opening']['right'], analysis['smile_width']]
-
-    return vect_measure
-
-
-def get_emoji_from_image(image_RGB):
-    gray = cv2.cvtColor(image_RGB, cv2.COLOR_RGB2GRAY)
-    face = face_cascade.detectMultiScale(gray, 1.1, 4)
-    (x, y, w, h) = face[0]
-    face_roi = image_RGB[y:y+h, x:x +
-                         w] if model_type == "pretrained" else gray[y:y+h, x:x+w]
-
-    current_emotion, proba = predict_emotion(face_roi)
-    vector_measure = get_vector_measures(image_RGB, image_RGB)
-    distances_measures = np.linalg.norm(data_measures - vector_measure, axis=1)
-    distances_emotions = np.linalg.norm(data_emotions - proba, axis=1)
-
-    proba_measures = np.exp(-distances_measures) / \
-        np.sum(np.exp(-distances_measures))
-    proba_emotions = np.exp(-distances_emotions) / \
-        np.sum(np.exp(-distances_emotions))
-
-    alpha_emotions = 0.5
-    proba_final = alpha_emotions * proba_emotions + \
-        (1 - alpha_emotions) * proba_measures
-
-    idx = np.argmax(proba_final)
-
-    return df.iloc[idx]['emoji']
-
-
-def generate_frames():
-    global current_emotion
-    global vector_measure
-    global proba
-    camera = cv2.VideoCapture(camera_index)
-    if not camera.isOpened():
-        print(f"Error: Could not access camera with index {camera_index}")
-        return
-
-    while True:
-        success, frame = camera.read()
-        if not success:
-            break
-        else:
-            rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            gray = cv2.cvtColor(rgb_frame, cv2.COLOR_RGB2GRAY)
-
-            faces = face_cascade.detectMultiScale(gray, 1.1, 4)
-
-            for (x, y, w, h) in faces:
-                face_roi = frame[y:y+h, x:x +
-                                 w] if model_type == "pretrained" else gray[y:y+h, x:x+w]
-
-                current_emotion, proba = predict_emotion(face_roi)
-                vector_measure = get_vector_measures(rgb_frame, frame)
-
-                cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 0, 0), 2)
-
-            ret, buffer = cv2.imencode('.jpg', frame)
-            frame = buffer.tobytes()
-
-            yield (b'--frame\r\n'
-                   b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+vector_measure = [10, 9, 9, 40]
+probas = np.array([0.125]*8)
 
 
 def get_emojis():
     global current_emotion
     global vector_measure
-    global proba
+    global probas
 
-    distances_measures = np.linalg.norm(data_measures - vector_measure, axis=1)
-    distances_emotions = np.linalg.norm(data_emotions - proba, axis=1)
+    distances_measures = np.linalg.norm(data_measures - np.array(vector_measure), axis=1)
+    distances_emotions = np.linalg.norm(data_emotions - probas, axis=1)
 
-    proba_measures = np.exp(-distances_measures) / \
-        np.sum(np.exp(-distances_measures))
-    proba_emotions = np.exp(-distances_emotions) / \
-        np.sum(np.exp(-distances_emotions))
+    proba_measures = np.exp(distances_measures) / np.sum(np.exp(distances_measures))
+    proba_emotions = np.exp(distances_emotions) / np.sum(np.exp(distances_emotions))
 
-    alpha_emotions = 0.5
-    proba_final = alpha_emotions * proba_emotions + \
-        (1 - alpha_emotions) * proba_measures
+    alpha_emotions = 0.6
+    proba_final = alpha_emotions * proba_emotions + (1 - alpha_emotions) * proba_measures
 
-    idx = np.argmax(proba_final)
+    idx = np.argmin(proba_final)
 
     suggested_emojis = [{
         "name": df.iloc[idx]['name'],
         "emoji": df.iloc[idx]['emoji']
     }]
+
     return suggested_emojis
 
 
@@ -203,8 +70,6 @@ trained_model.eval()
 face_cascade = cv2.CascadeClassifier(
     cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
 current_emotion = {}
-probas = None
-
 
 def predict_emotion(face_roi):
     """Predicts emotion based on the selected model."""
@@ -237,7 +102,7 @@ def predict_emotion(face_roi):
         # Normalize the probabilities to create a vector (if necessary)
         probabilities = np.array([result[label.lower()]
                                  for label in emotion_labels])
-        probabilities /= probabilities.sum()  # Normalize to ensure it sums to 1
+        probabilities /= probabilities.sum()
 
         return emotion_data, probabilities
 
@@ -248,7 +113,7 @@ def generate_frames():
     """
     global current_emotion
     global vector_measure
-    global proba
+    global probas
     camera_index = 0
 
     # Initialize camera
@@ -280,16 +145,15 @@ def generate_frames():
             x, y, w, h = largest_face
 
             # Get the face ROI (gray or color depending on the model)
-            face_roi = frame[y:y+h, x:x +
-                             w] if model_type == "DeepFace" else gray[y:y+h, x:x+w]
+            face_roi = frame[y:y+h, x:x + w] if model_type == "DeepFace" else gray[y:y+h, x:x+w]
 
             if current_mode == "Camera":
                 # Predict emotion for the largest face
-                current_emotion, proba = predict_emotion(face_roi)
+                current_emotion, probas = predict_emotion(face_roi)
 
             # Update vector measures (additional processing, if needed)
 
-            # vector_measure = get_vector_measures(rgb_frame, frame)
+            vector_measure = get_vector_measures(rgb_frame, frame)
 
             # Draw rectangle around the detected face
             cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 0, 0), 2)
