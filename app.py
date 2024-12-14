@@ -33,15 +33,15 @@ def get_emojis(alpha_emotions=0.6):
     global vector_measures
     global vector_emotions
 
+    # Compute distances
     distances_measures = np.linalg.norm(
         data_measures - vector_measures, axis=1)
     distances_emotions = np.linalg.norm(
         data_emotions - vector_emotions, axis=1)
 
-    proba_measures = np.exp(distances_measures) / \
-        np.sum(np.exp(distances_measures))
-    proba_emotions = np.exp(distances_emotions) / \
-        np.sum(np.exp(distances_emotions))
+    # Compute probabilities
+    proba_measures = distances_measures / np.sum(distances_measures)
+    proba_emotions = distances_emotions / np.sum(distances_emotions)
 
     proba_final = alpha_emotions * proba_emotions + \
         (1 - alpha_emotions) * proba_measures
