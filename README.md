@@ -35,6 +35,9 @@ python app.py
 - `requirements.txt`: Contains the required packages for this project.
 - `assets/`: Contains the images used in the README.
 
+### Project Description
+Check the [project description](Face-Based_Emoji_Recommendation_Engine.pdf) for more details about the project.
+
 ### Contributors
 - [Gabriel Mercier]
 - [Brahim Touayouch]

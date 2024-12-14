@@ -30,7 +30,6 @@
             font-size: 2.5rem;
             font-family: 'Poppins', sans-serif;
             color: #93c5fd;
-            /* Light blue text color */
             text-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
             line-height: 1.4;
             letter-spacing: 1.2px;
@@ -112,10 +111,7 @@
         .percentage {
             width: 100%;
             text-align: center;
-
-            /* margin-left: 10px; */
             color: #93c5fd;
-            /* padding-right: 10px; */
             font-weight: bold;
         }
 
@@ -163,7 +159,6 @@
             align-items: center;
             padding: 10px;
             background-color: #1e293b;
-            /* Matches other sections */
         }
 
         .toggle-switch {
@@ -174,7 +169,6 @@
             width: 260px;
             height: 50px;
             background: #334155;
-            /* Darker background for contrast */
             border-radius: 25px;
             cursor: pointer;
             margin: 15px 0;
@@ -189,10 +183,8 @@
             font-size: 0.9rem;
             font-family: 'Poppins', sans-serif;
             color: #e5e7eb;
-            /* Light text color */
             z-index: 1;
             line-height: 40px;
-            /* Center align the text vertically */
             font-weight: bold;
             transition: color 0.3s ease;
         }
@@ -204,7 +196,6 @@
             width: 50%;
             height: 40px;
             background: linear-gradient(135deg, #38bdf8, #0ea5e9);
-            /* Gradient for active background */
             border-radius: 20px;
             transition: left 0.3s ease, background 0.3s ease;
             z-index: 0;
@@ -212,17 +203,14 @@
 
         .toggle-switch.active .toggle-slider {
             left: calc(100% - 50% - 5px);
-            /* Move the slider to the right */
         }
 
         .toggle-switch.active .toggle-value:nth-child(1) {
             color: #93c5fd;
-            /* Inactive text light blue */
         }
 
         .toggle-switch:not(.active) .toggle-value:nth-child(2) {
             color: #93c5fd;
-            /* Inactive text light blue */
         }
 
         .notification {
@@ -262,11 +250,8 @@
 
         .upload-section {
             display: none;
-            /* Initially hidden */
             background-color: #1e293b;
-            /* Matches the container background */
             border: 2px dashed #38bdf8;
-            /* Dashed border for file upload */
             border-radius: 10px;
             padding: 20px;
             margin: 20px auto;
@@ -304,7 +289,6 @@
 
         #image-preview {
             display: none;
-            /* Initially hidden */
             margin-top: 10px;
             border-radius: 10px;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
@@ -319,9 +303,6 @@
             font-weight: bold;
         }
 
-
-
-        
         .bottom-section {
             flex: 1;
             padding: 20px;
@@ -336,6 +317,7 @@
             border-bottom: 2px solid #38bdf8;
             padding-bottom: 10px;
         }
+
         .emoji-part {
             justify-content: center;
             align-items: center;
@@ -343,27 +325,15 @@
             margin: 0 30px 20px;
         }
 
-        /* .emoji-label {
-            font-size: 1.2rem;
-            color: #93c5fd;
-            margin-top: 10px;
-            font-weight: bold;
-        }
-
-        .emoji-item,
-        .emoji-label {
-            display: flex;
-            flex-direction: column;
-        } */
         .emoji-container {
             display: flex;
             justify-content: space-around;
             align-items: flex-end;
         }
+
         .emoji-icon {
             font-size: 7rem;
         }
-
     </style>
 </head>
 
@@ -391,7 +361,6 @@
                 </div>
             </div>
 
-            <!-- Section for Video or Upload -->
             <div class="video-section" id="video-container">
                 <img src="{{ url_for('video_feed') }}" alt="Video stream">
             </div>
@@ -406,7 +375,7 @@
                 <div class="top-section">
                     <h2>😊 How Are You <span style="color: violet;">Feeling</span> Today?</h2>
                     <div class="emotion-container" id="emotion-label">
-                        <!-- Emotion percentages will be dynamically added here -->
+                        <!-- Emotion percentages will be dynamically added -->
                     </div>
                 </div>
 
@@ -422,16 +391,16 @@
 
     <script>
         function fetchEmotion() {
-    fetch('/emotion_feed')
-        .then(response => response.json())
-        .then(data => {
-            if (data.error) {
-                document.getElementById('emotion-label').innerHTML = data.error;
-            } else {
-                let emotionHTML = '';
-                for (let [emotion, percentage] of Object.entries(data)) {
-                    if (emotion !== 'emojis') {
-                        emotionHTML += `
+            fetch('/emotion_feed')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        document.getElementById('emotion-label').innerHTML = data.error;
+                    } else {
+                        let emotionHTML = '';
+                        for (let [emotion, percentage] of Object.entries(data)) {
+                            if (emotion !== 'emojis') {
+                                emotionHTML += `
                             <div class="emotion-bar">
                                 <span class="emotion-name">${emotion}</span>
                                 <div class="progress-bar">
@@ -440,17 +409,14 @@
                                 <span class="percentage">${percentage}%</span>
                             </div>
                         `;
-                    }
-                }
-                document.getElementById('emotion-label').innerHTML = emotionHTML;
+                            }
+                        }
+                        document.getElementById('emotion-label').innerHTML = emotionHTML;
 
-                
-
-                // Handling the emojis
-                let emojiHTML = '';
-                if (data.emojis) {
-                    data.emojis.forEach(emoji => {
-                        emojiHTML += `
+                        let emojiHTML = '';
+                        if (data.emojis) {
+                            data.emojis.forEach(emoji => {
+                                emojiHTML += `
                             <div class="emoji-part">
                                 <div class="emoji-item">
                                     <span class="emoji-icon">${emoji.emoji}</span>
@@ -487,14 +453,14 @@
                             </div>
                             
                         `;
-                    });
-                }
-                document.getElementById('emoji-label').innerHTML = emojiHTML;
+                            });
+                        }
+                        document.getElementById('emoji-label').innerHTML = emojiHTML;
 
-            }
-        })
-        .catch(error => console.error('Error fetching emotion:', error));
-}
+                    }
+                })
+                .catch(error => console.error('Error fetching emotion:', error));
+        }
 
         async function toggleCamera() {
             const toggle = document.getElementById('camera-toggle');
