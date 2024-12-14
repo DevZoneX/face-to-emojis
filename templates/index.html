@@ -156,57 +156,6 @@
             transition: height 0.5s ease;
         }
 
-
-        .bottom-section {
-            flex: 1;
-            padding: 20px;
-            justify-content: center;
-            text-align: center;
-            margin-top: 60px;
-        }
-
-        .bottom-section h2 {
-            text-align: center;
-            font-size: 1.5rem;
-            margin-bottom: 20px;
-            color: #38bdf8;
-            border-bottom: 2px solid #38bdf8;
-            padding-bottom: 10px;
-        }
-
-        .emoji-container {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            align-items: center;
-            height: 100%;
-            padding: 0;
-            margin-top: -50px;
-        }
-
-        .emoji-item {
-            text-align: center;
-            font-size: 6rem;
-            margin: 15px;
-            transition: transform 0.3s ease, opacity 0.3s ease;
-        }
-
-        .emoji-label {
-            font-size: 1.2rem;
-            color: #93c5fd;
-            margin-top: 10px;
-            font-weight: bold;
-        }
-
-        .emoji-item,
-        .emoji-label {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-        }
-
         .button-container {
             display: flex;
             flex-direction: column;
@@ -369,6 +318,52 @@
             margin-bottom: 10px;
             font-weight: bold;
         }
+
+
+
+        
+        .bottom-section {
+            flex: 1;
+            padding: 20px;
+            margin-top: 60px;
+        }
+
+        .bottom-section h2 {
+            text-align: center;
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            color: #38bdf8;
+            border-bottom: 2px solid #38bdf8;
+            padding-bottom: 10px;
+        }
+        .emoji-part {
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            margin: 0 30px 20px;
+        }
+
+        /* .emoji-label {
+            font-size: 1.2rem;
+            color: #93c5fd;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+
+        .emoji-item,
+        .emoji-label {
+            display: flex;
+            flex-direction: column;
+        } */
+        .emoji-container {
+            display: flex;
+            justify-content: space-around;
+            align-items: flex-end;
+        }
+        .emoji-icon {
+            font-size: 7rem;
+        }
+
     </style>
 </head>
 
@@ -417,8 +412,9 @@
 
                 <div class="bottom-section">
                     <h2>🎭 Suggested <span style="color: violet;">Emojis</span> For You</h2>
-                    <div class="emoji-container" id="emoji-label"></div>
-                    <!-- Emotion percentages will be dynamically added here -->
+                    <div class="emoji-container" id="emoji-label">
+                        <!-- Dynamically populated emoji visualizations -->
+                    </div>
                 </div>
             </div>
         </div>
@@ -426,45 +422,79 @@
 
     <script>
         function fetchEmotion() {
-            fetch('/emotion_feed')
-                .then(response => response.json())
-                .then(data => {
-                    if (data.error) {
-                        document.getElementById('emotion-label').innerHTML = data.error;
-                    } else {
-                        let emotionHTML = '';
-                        for (let [emotion, percentage] of Object.entries(data)) {
-                            if (emotion !== 'emojis') {
-                                emotionHTML += `
-                                <div class="emotion-bar">
-                                    <span class="emotion-name">${emotion}</span>
-                                    <div class="progress-bar">
-                                        <div class="progress" style="height: ${percentage}%;"></div>
-                                    </div>
-                                    <span class="percentage">${percentage}%</span>
+    fetch('/emotion_feed')
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                document.getElementById('emotion-label').innerHTML = data.error;
+            } else {
+                let emotionHTML = '';
+                for (let [emotion, percentage] of Object.entries(data)) {
+                    if (emotion !== 'emojis') {
+                        emotionHTML += `
+                            <div class="emotion-bar">
+                                <span class="emotion-name">${emotion}</span>
+                                <div class="progress-bar">
+                                    <div class="progress" style="height: ${percentage}%;"></div>
                                 </div>
-                            `;
-                            }
-                        }
-                        document.getElementById('emotion-label').innerHTML = emotionHTML;
-
-                        // Handling the emojis
-                        let emojiHTML = '';
-                        if (data.emojis) {
-                            data.emojis.forEach(emoji => {
-                                emojiHTML += `
-                                    <div class="emoji-item">
-                                        <div class="emoji">${emoji.emoji}</div>
-                                        <div class="emoji-label">${emoji.name}</div>
-                                    </div>
-                                `;
-                            });
-                        }
-                        document.getElementById('emoji-label').innerHTML = emojiHTML;
+                                <span class="percentage">${percentage}%</span>
+                            </div>
+                        `;
                     }
-                })
-                .catch(error => console.error('Error fetching emotion:', error));
-        }
+                }
+                document.getElementById('emotion-label').innerHTML = emotionHTML;
+
+                
+
+                // Handling the emojis
+                let emojiHTML = '';
+                if (data.emojis) {
+                    data.emojis.forEach(emoji => {
+                        emojiHTML += `
+                            <div class="emoji-part">
+                                <div class="emoji-item">
+                                    <span class="emoji-icon">${emoji.emoji}</span>
+                                </div>
+                                <span class="emoji-name">${emoji.name}</span>
+                            </div>
+                            <div class="emotion-bar">
+                                <span class="emotion-name">Mouth</span>
+                                <div class="progress-bar">
+                                    <div class="progress" style="height: ${emoji.measures.mouth_opening}%;"></div>
+                                </div>
+                                <span class="percentage">${emoji.measures.mouth_opening}%</span>
+                            </div>
+                            <div class="emotion-bar">
+                                <span class="emotion-name" style="width: 100px;">Left Eye</span>
+                                <div class="progress-bar">
+                                    <div class="progress" style="height: ${emoji.measures.left_eye_opening}%;"></div>
+                                </div>
+                                <span class="percentage">${emoji.measures.left_eye_opening}%</span>
+                            </div>
+                            <div class="emotion-bar">
+                                <span class="emotion-name" style="width: 100px;">Right Eye</span>
+                                <div class="progress-bar">
+                                    <div class="progress" style="height: ${emoji.measures.right_eye_opening}%;"></div>
+                                </div>
+                                <span class="percentage">${emoji.measures.right_eye_opening}%</span>
+                            </div>
+                            <div class="emotion-bar">
+                                <span class="emotion-name">Smile</span>
+                                <div class="progress-bar">
+                                    <div class="progress" style="height: ${emoji.measures.smile_width}%;"></div>
+                                </div>
+                                <span class="percentage">${emoji.measures.smile_width}%</span>
+                            </div>
+                            
+                        `;
+                    });
+                }
+                document.getElementById('emoji-label').innerHTML = emojiHTML;
+
+            }
+        })
+        .catch(error => console.error('Error fetching emotion:', error));
+}
 
         async function toggleCamera() {
             const toggle = document.getElementById('camera-toggle');

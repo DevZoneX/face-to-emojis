@@ -4,3 +4,4 @@ emotion_detection/data
 *.pyc
 ssh_connect.py
 myenv/
+face/

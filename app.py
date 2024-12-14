@@ -21,39 +21,50 @@ emotion_labels = ["Angry", "Contempt", "Disgust", "Fear", "Happy", "Neutral", "S
 df = pd.read_csv("datasets/df.csv")
 measures_features = ["mouth_opening", "left_eye_opening",
                      "right_eye_opening", "smile_width"]
-emotions_features = ["anger", "contempt", "disgust",
-                     "fear", "joy", "neutral", "sadness", "surprise"]
+emotions_features = ["anger", "contempt", "disgust", "fear", "joy", "neutral", "sadness", "surprise"] if model_type == "EmotionCNN" else ["anger", "disgust", "fear", "joy", "neutral", "sadness", "surprise"]
 data_measures = df[measures_features].to_numpy()
 data_emotions = df[emotions_features].to_numpy()
-vector_measures = np.array([10, 9, 9, 40])
-vector_emotions = np.array([0.125]*8)
+vector_measure = [10, 9, 9, 40]
+probas = np.array([0.125]*8) if model_type == "EmotionCNN" else np.array([0.125]*7)
 
 
-def get_emojis(alpha_emotions=0.6):
-    global vector_measures
-    global vector_emotions
+def get_emojis():
+    global current_emotion
+    global vector_measure
+    global probas
 
-    # Compute distances
-    distances_measures = np.linalg.norm(
-        data_measures - vector_measures, axis=1)
-    distances_emotions = np.linalg.norm(
-        data_emotions - vector_emotions, axis=1)
+    distances_measures = np.linalg.norm(data_measures - np.array(vector_measure), axis=1)
+    distances_emotions = np.linalg.norm(data_emotions - probas, axis=1)
 
-    # Compute probabilities
-    proba_measures = distances_measures / np.sum(distances_measures)
-    proba_emotions = distances_emotions / np.sum(distances_emotions)
+    proba_measures = np.exp(distances_measures) / np.sum(np.exp(distances_measures))
+    proba_emotions = np.exp(distances_emotions) / np.sum(np.exp(distances_emotions))
 
-    proba_final = alpha_emotions * proba_emotions + \
-        (1 - alpha_emotions) * proba_measures
+    alpha_emotions = 0.6
+    proba_final = alpha_emotions * proba_emotions + (1 - alpha_emotions) * proba_measures
 
     idx = np.argmin(proba_final)
 
+    max_values = {
+        "mouth_opening": 60,
+        "left_eye_opening": 25,
+        "right_eye_opening": 25,
+        "smile_width": 90 
+    }
+
     suggested_emojis = [{
         "name": df.iloc[idx]['name'],
-        "emoji": df.iloc[idx]['emoji']
+        "emoji": df.iloc[idx]['emoji'],
+        "measures": {
+            "mouth_opening": round((vector_measure[0] / max_values["mouth_opening"]) * 100, 2),
+            "left_eye_opening": round((vector_measure[1] / max_values["left_eye_opening"]) * 100, 2),
+            "right_eye_opening": round((vector_measure[2] / max_values["right_eye_opening"]) * 100, 2),
+            "smile_width": round((vector_measure[3] / max_values["smile_width"]) * 100, 2),
+        }
     }]
 
+
     return suggested_emojis
+
 
 
 current_mode = "Camera"
@@ -74,9 +85,9 @@ face_cascade = cv2.CascadeClassifier(
     cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
 current_emotion = {}
 
-
-def predict_emotion(face_roi, model_type):
+def predict_emotion(face_roi):
     """Predicts emotion based on the selected model."""
+    global model_type
 
     if model_type == "EmotionCNN":
         # Process face ROI for EmotionCNN model
@@ -115,8 +126,8 @@ def generate_frames():
     Capture frames from the camera, detect faces, and process emotion prediction for the most prominent face.
     """
     global current_emotion
-    global vector_measures
-    global vector_emotions
+    global vector_measure
+    global probas
     camera_index = 0
 
     # Initialize camera
@@ -148,17 +159,15 @@ def generate_frames():
             x, y, w, h = largest_face
 
             # Get the face ROI (gray or color depending on the model)
-            face_roi = frame[y:y+h, x:x +
-                             w] if model_type == "DeepFace" else gray[y:y+h, x:x+w]
+            face_roi = frame[y:y+h, x:x + w] if model_type == "DeepFace" else gray[y:y+h, x:x+w]
 
             if current_mode == "Camera":
                 # Predict emotion for the largest face
-                current_emotion, vector_emotions = predict_emotion(
-                    face_roi, model_type)
+                current_emotion, probas = predict_emotion(face_roi)
 
-            # Update vector measures (additional processing, if needed)
+                # Update vector measures (additional processing, if needed)
 
-            vector_measures = get_vector_measures(frame)
+                vector_measure = get_vector_measures(rgb_frame, frame)
 
             # Draw rectangle around the detected face
             cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 0, 0), 2)
@@ -200,12 +209,20 @@ def emotion_feed():
 def set_model():
     global model_type
     global emotion_labels
+    global probas
+    global emotions_features
+    global data_emotions
     data = request.get_json()
 
     if data and 'model_type' in data:
         model_type = data['model_type']
         emotion_labels = ["Angry", "Contempt", "Disgust", "Fear", "Happy", "Neutral", "Sad", "Surprise"] if model_type == "EmotionCNN" else [
             "Angry", "Disgust", "Fear", "Happy", "Neutral", "Sad", "Surprise"]
+        
+        probas = np.array([0.125]*8) if model_type == "EmotionCNN" else np.array([0.125]*7)
+        emotions_features = ["anger", "contempt", "disgust", "fear", "joy", "neutral", "sadness", "surprise"] if model_type == "EmotionCNN" else ["anger", "disgust", "fear", "joy", "neutral", "sadness", "surprise"]
+        data_emotions = df[emotions_features].to_numpy()
+
         return jsonify({"message": f"Model set to {model_type} successfully."})
     return jsonify({"error": "Invalid request"})
 
@@ -214,6 +231,7 @@ def set_model():
 def upload_image():
     global current_emotion
     global probas
+    global vector_measure
 
     if 'file' not in request.files:
         return jsonify({"error": "No file part"}), 400
@@ -231,7 +249,8 @@ def upload_image():
         gray_img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
         # Detect emotion using existing model logic
-        current_emotion, probas = predict_emotion(gray_img, model_type)
+        current_emotion, probas = predict_emotion(gray_img)
+        vector_measure = get_vector_measures(img, img)
 
         current_emotion['emojis'] = get_emojis()
 
@@ -256,4 +275,4 @@ def set_mode():
 
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5002)
+    app.run(port=5002, debug=False)
